@@ -1,11 +1,12 @@
 use bit_vec::BitVec;
-use rayon::prelude::*;
 use std::time::{Duration, Instant};
 
 const MX_N: usize = 10i32.pow(8) as usize;
+const NUM_THREADS: usize = 8;
 
 fn prime_sieve() -> (Duration, usize, u64, Vec<usize>) {
     let start = Instant::now();
+
     let elapsed = start.elapsed();
 
     (elapsed, 0, 0, vec![])
