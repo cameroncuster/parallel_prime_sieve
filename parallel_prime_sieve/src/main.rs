@@ -1,10 +1,14 @@
 use bit_vec::BitVec;
-use std::time::Instant;
+use rayon::prelude::*;
+use std::time::{Duration, Instant};
 
 const MX_N: usize = 10i32.pow(8) as usize;
 
-fn prime_sieve() -> (f64, usize, u64, Vec<usize>) {
-    (0.0, 0, 0, vec![])
+fn prime_sieve() -> (Duration, usize, u64, Vec<usize>) {
+    let start = Instant::now();
+    let elapsed = start.elapsed();
+
+    (elapsed, 0, 0, vec![])
 }
 
 #[cfg(test)]
@@ -15,10 +19,10 @@ mod tests {
         let mut is_prime = BitVec::from_elem(MX_N, true);
         is_prime.set(0, false);
         is_prime.set(1, false);
-        for i in 2..((MX_N as f64).sqrt() + 1 as usize) {
+        for i in 2..(((MX_N as f64).sqrt() + 1.0) as usize) {
             if is_prime[i] {
-                for j in (i * i..MX_N as usize).step_by(i) {
-                    is_prime.set(j, false);
+                for j in ((i as u64) * (i as u64)..MX_N as u64).step_by(i) {
+                    is_prime.set(j as usize, false);
                 }
             }
         }
@@ -34,24 +38,32 @@ mod tests {
                 }
             }
         }
+        primes.reverse();
         (cnt, sum, primes)
     }
     #[test]
     fn test_prime_sieve() {
-        let (cnt, sum, primes) = prime_sieve_single_threaded();
-        // compare with prime_sieve
-        assert_eq!(cnt, 5761455);
-        assert_eq!(sum, 279209790387276);
-        assert_eq!(
-            primes,
-            vec![
-                99999989, 99999971, 99999959, 99999941, 99999931, 99999847, 99999839, 99999827,
-                99999821, 99999787
-            ]
-        );
+        let (cnt_single, sum_single, ten_largest_primes_single) = prime_sieve_single_threaded();
+        let (_exe_time, cnt_multi, sum_multi, ten_largest_primes_multi) = prime_sieve();
+        assert_eq!(cnt_single, cnt_multi);
+        assert_eq!(sum_single, sum_multi);
+        assert_eq!(ten_largest_primes_single, ten_largest_primes_multi);
     }
 }
 
 fn main() {
     let (exe_time, cnt_primes, sum_primes, ten_largest_primes) = prime_sieve();
+
+    let ten_largest_primes_str = ten_largest_primes
+        .iter()
+        .map(|n| n.to_string())
+        .collect::<Vec<String>>()
+        .join(" ");
+
+    let output = format!(
+        "{:?} {} {}\n{}\n",
+        exe_time, cnt_primes, sum_primes, ten_largest_primes_str
+    );
+
+    std::fs::write("primes.txt", output).expect("Unable to write to file");
 }
